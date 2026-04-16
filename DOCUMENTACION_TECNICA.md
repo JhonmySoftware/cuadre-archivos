@@ -1,5 +1,5 @@
-# CUADRE DE ARCHIVOS - DOCUMENTACION TECNICA
-## Banco Davivienda
+# DOCUMENTACION TECNICA
+## Cuadre de Archivos - Banco Davivienda
 
 ---
 
@@ -8,10 +8,11 @@
 | Campo | Valor |
 |-------|-------|
 | **Nombre** | Cuadre de Archivos |
-| **Version** | 1.0 |
+| **Version** | 1.0.0 |
 | **Empresa** | Banco Davivienda |
 | **Proposito** | Validacion y cruce de archivos Excel |
-| **Java** | 1.8+ (requiere POI 5.x) |
+| **Java** | 1.8+ |
+| **Repositorio** | https://github.com/JhonmySoftware/cuadre-archivos |
 
 ---
 
@@ -24,22 +25,41 @@ cuadre-archivos/
 │   ├── LectorExcel.java      # Lectura de archivos Excel
 │   ├── ValidadorCruce.java   # Logica de cruce de datos
 │   └── EscritorExcel.java    # Generacion de Excel con estilos
+├── src/main/resources/
+│   └── logback.xml          # Configuracion de logs
+├── src/test/java/com/banco/cuadre/
+│   └── ValidadorCruceTest.java  # Pruebas unitarias
 ├── pom.xml                   # Configuracion Maven
-├── cuadre.bat               # Script de ejecucion
-├── target/
-│   └── cuadre-archivos-1.0.jar  # JAR ejecutable
-└── README.md
+├── run.bat                   # Script de ejecucion
+├── README.md                 # Documentacion general
+├── DOCUMENTACION_TECNICA.md  # Este documento
+├── DOCUMENTACION_FUNCIONAL.md # Manual de usuario
+├── CONTRIBUTING.md           # Guia de contribucion
+├── LICENSE                   # Licencia MIT
+├── .gitignore                # Archivos ignorados
+├── .editorconfig             # Estandares de codigo
+└── .github/workflows/
+    └── java-ci.yml           # Pipeline CI/CD
 ```
 
 ---
 
-## 3. CLASES Y PAQUETES
+## 3. DEPENDENCIAS
 
-### 3.1 Paquetes Requeridos
+### 3.1 Dependencias Maven (pom.xml)
 
-**Dependencias Maven (pom.xml):**
 ```xml
+<properties>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+    <poi.version>5.2.5</poi.version>
+    <slf4j.version>1.7.36</slf4j.version>
+    <logback.version>1.2.12</logback.version>
+    <junit.version>4.13.2</junit.version>
+</properties>
+
 <dependencies>
+    <!-- Apache POI - Lectura/Escritura Excel -->
     <dependency>
         <groupId>org.apache.poi</groupId>
         <artifactId>poi-ooxml</artifactId>
@@ -50,271 +70,424 @@ cuadre-archivos/
         <artifactId>poi</artifactId>
         <version>5.2.5</version>
     </dependency>
+    
+    <!-- Logging -->
     <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
-        <version>2.0.11</version>
+        <version>1.7.36</version>
     </dependency>
     <dependency>
         <groupId>ch.qos.logback</groupId>
         <artifactId>logback-classic</artifactId>
-        <version>1.4.14</version>
+        <version>1.2.12</version>
+    </dependency>
+    
+    <!-- Testing -->
+    <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>4.13.2</version>
+        <scope>test</scope>
     </dependency>
 </dependencies>
 ```
 
-### 3.2 Clases a Migrar
+### 3.2 Matriz de Compatibilidad
 
-Para migrar a otro proyecto, copie:
-
-1. **CuadreApp.java** - Interfaz grafica
-   - Maneja la UI con Swing
-   - Estados: `infoArchivo1`, `infoArchivo2`
-   - Colecciones: `relaciones` (Lista de RelacionItem)
-   - Metodos principales: `ejecutarCruce()`, `actualizarRelaciones()`
-
-2. **LectorExcel.java** - Lectura de datos
-   - Clase interna `InfoArchivo` - Informacion del archivo
-   - Clase interna `InfoHoja` - Informacion de la hoja
-   - Metodo: `leerArchivo(ruta)` - Retorna InfoArchivo
-
-3. **ValidadorCruce.java** - Logica de negocio
-   - Metodo: `generarResultadoConModo()` - Cruce con modo AND/OR
-   - Metodo: `normalizarValor()` - Normaliza ceros izquierda
-
-4. **EscritorExcel.java** - Generacion de reportes
-   - Metodo: `guardarResultadoNuevo()` - Genera Excel de 4 hojas
-
-### 3.3 Clase Main
-
-```java
-public static void main(String[] args) {
-    SwingUtilities.invokeLater(() -> {
-        CuadreApp app = new CuadreApp();
-        app.setVisible(true);
-    });
-}
-```
+| Dependencia | Version | Java Minimo | Proposito |
+|-------------|---------|-------------|-----------|
+| Apache POI | 5.2.5 | Java 8 | Excel |
+| SLF4J | 1.7.36 | Java 5 | Logging API |
+| Logback | 1.2.12 | Java 6 | Logging Impl |
+| JUnit | 4.13.2 | Java 5 | Testing |
 
 ---
 
 ## 4. ARQUITECTURA
 
-### 4.1 Flujo de Datos
+### 4.1 Diagrama de Componentes
 
 ```
-[Archivo A] --> [LectorExcel] --> [ValidadorCruce] --> [EscritorExcel] --> [Resultado.xlsx]
-                        |                    |
-                        v                    v
-                   InfoArchivo         Map<String, Object>
-                        |                    |
-                        v                    v
-                   InfoHoja          - resultadoA (List)
-                        |                    - verificados (List)
-                        v                    - noEncontrados (List)
-                   datos (List)             - estadisticas (Map)
-                                          - columnasClaveA/B (List)
++------------------+     +------------------+     +------------------+
+|   CuadreApp      | --> |   LectorExcel    | --> |   ValidadorCruce |
+|   (GUI Swing)    |     |   (POI Reader)   |     |   (Logica)       |
++------------------+     +------------------+     +------------------+
+         |                                                    |
+         v                                                    v
++------------------+                              +------------------+
+|   Logback.xml    |                              |   EscritorExcel  |
+|   (Config Logs)  |                              |   (POI Writer)    |
++------------------+                              +------------------+
+                                                           |
+                                                           v
+                                                  +------------------+
+                                                  |   Resultado.xlsx |
+                                                  |   (4 hojas)      |
+                                                  +------------------+
 ```
 
-### 4.2 Modelo de Datos
+### 4.2 Flujo de Ejecucion
 
+```
+1. Usuario selecciona Archivo A (Origen)
+   └─> LectorExcel.leerArchivo() -> InfoArchivo
+   
+2. Usuario selecciona Archivo B (Destino)
+   └─> LectorExcel.leerArchivo() -> InfoArchivo
+   
+3. Usuario configura relaciones (PK + Keys)
+   └─> RelacionItem[] -> relaciones
+   
+4. Usuario ejecuta cruce
+   └─> ValidadorCruce.generarResultadoConModo()
+       ├─> Normalizar datos
+       ├─> Buscar coincidencias (AND/OR)
+       └─> Generar ResultadoCruce
+   
+5. Generar reporte Excel
+   └─> EscritorExcel.guardarResultadoNuevo()
+       ├─> Hoja 1: Resumen
+       ├─> Hoja 2: Todos
+       ├─> Hoja 3: Verificados
+       └─> Hoja 4: No Encontrados
+```
+
+---
+
+## 5. CLASES PRINCIPALES
+
+### 5.1 CuadreApp.java (GUI)
+
+**Responsabilidad**: Interfaz grafica de usuario.
+
+**Constantes de Color Davivienda**:
 ```java
-// Informacion de Archivo
-InfoArchivo {
+private static final Color DAVI_ROJO = new Color(210, 20, 30);
+private static final Color DAVI_ROJO_OSCURO = new Color(160, 15, 25);
+private static final Color DAVI_ROJO_CLARO = new Color(220, 40, 50);
+```
+
+**Metodos Principales**:
+| Metodo | Descripcion |
+|--------|-------------|
+| `crearPanelPrincipal()` | Construye la interfaz Swing completa |
+| `panelSelectorArchivo(int num)` | Crea selector de archivo/hoja |
+| `actualizarRelaciones()` | Actualiza panel de relaciones |
+| `ejecutarCruce()` | Ejecuta el cruce y genera reporte |
+| `cargarHojas(String archivo)` | Carga hojas del Excel seleccionado |
+
+**Estado de la Aplicacion**:
+```java
+private LectorExcel.InfoArchivo infoArchivo1;  // Archivo Origen
+private LectorExcel.InfoArchivo infoArchivo2;  // Archivo Destino
+private List<RelacionItem> relaciones;          // Relaciones configuradas
+private JRadioButton rbMatchAll;               // Modo AND
+private JRadioButton rbMatchAny;               // Modo OR
+```
+
+### 5.2 LectorExcel.java
+
+**Responsabilidad**: Lectura de archivos Excel (.xlsx).
+
+**Clase InfoArchivo**:
+```java
+public static class InfoArchivo {
     String ruta;
     String nombre;
     List<InfoHoja> hojas;
 }
+```
 
-// Informacion de Hoja
-InfoHoja {
+**Clase InfoHoja**:
+```java
+public static class InfoHoja {
     String nombre;
     int totalFilas;
     int totalColumnas;
     List<String> encabezados;
-    List<Map<String, String>> datos;  // Cada Map es una fila
-}
-
-// Resultado del Cruce
-Map<String, Object> {
-    "resultadoA": List<Map<String, String>>,
-    "verificados": List<Map<String, String>>,
-    "noEncontrados": List<Map<String, String>>,
-    "estadisticas": Map<String, String>,
-    "columnasClaveA": List<String>,
-    "columnasClaveB": List<String>
+    List<Map<String, String>> datos;  // {nombreColumna -> valor}
 }
 ```
 
+**Metodos Principales**:
+| Metodo | Descripcion |
+|--------|-------------|
+| `leerArchivo(String ruta)` | Lee archivo Excel completo |
+| `leerHoja(Sheet hoja, int totalCols)` | Lee una hoja especifica |
+| `obtenerDato(Cell cell)` | Extrae valor de celda |
+
+### 5.3 ValidadorCruce.java
+
+**Responsabilidad**: Logica de negocio para cruce de datos.
+
+**Clase ResultadoCruce**:
+```java
+public static class ResultadoCruce {
+    int totalRegistros;
+    int encontrados;
+    int noEncontrados;
+    List<Map<String, Object>> detalles;
+}
+```
+
+**Metodos Principales**:
+| Metodo | Descripcion |
+|--------|-------------|
+| `generarResultadoConModo(...)` | Cruce con modo AND/OR |
+| `normalizarValor(String)` | Normaliza datos (ceros izq) |
+
+### 5.4 EscritorExcel.java
+
+**Responsabilidad**: Generacion de reportes Excel estilizados.
+
+**Metodos Principales**:
+| Metodo | Descripcion |
+|--------|-------------|
+| `guardarResultadoNuevo(...)` | Genera Excel de 4 hojas |
+| `crearHojaResumen(...)` | Hoja 1: Estadisticas |
+| `crearHojaTodos(...)` | Hoja 2: Todos registros |
+| `crearHojaVerificados(...)` | Hoja 3: Solo encontrados |
+| `crearHojaNoEncontrados(...)` | Hoja 4: Solo no encontrados |
+
 ---
 
-## 5. CONFIGURACION DE ESTILOS EXCEL
+## 6. MODELO DE DATOS
 
-### 5.1 Colores Davivienda
-
-| Color | IndexedColors | Uso |
-|-------|--------------|-----|
-| Rojo | RED | Headers, PK |
-| Rosa | ROSE | Columnas Primary Key |
-| Verde | GREEN | Estado: Encontrado |
-| Rojo | RED | Estado: No encontrado |
-| Gris | GREY_25_PERCENT | Secciones |
-| Blanco | WHITE | Datos |
-
-### 5.2 Estilos Definidos
+### 6.1 Relaciones de Cruce
 
 ```java
-// Headers
-styleHeader = crearEstilo(RED, WHITE, true, 10, CENTER);
-styleHeaderLeft = crearEstilo(RED, WHITE, true, 10, LEFT);
+public static class RelacionItem {
+    JComboBox<String> cmbA;      // Columna Archivo A
+    JComboBox<String> cmbB;      // Columna Archivo B
+    JButton btnEliminar;         // Eliminar relacion
+    boolean esClavePrimaria;     // true = PK (obligatoria)
+}
+```
 
-// Celdas datos
-styleCelda = crearEstilo(WHITE, BLACK, false, 10, LEFT);
-styleCeldaPK = crearEstilo(ROSE, RED, true, 10, LEFT);
+### 6.2 Resultado del Cruce
 
-// Estados
-styleCeldaOk = crearEstilo(WHITE, GREEN, true, 10, CENTER);
-styleCeldaError = crearEstilo(WHITE, RED, true, 10, CENTER);
+```java
+Map<String, Object> resultado = {
+    "resultadoA": List<Map<String, String>>,  // Todos registros A
+    "verificados": List<Map<String, String>>,   // Encontrados en B
+    "noEncontrados": List<Map<String, String>>, // No encontrados
+    "estadisticas": Map<String, String>,        // {clave -> valor}
+    "columnasClaveA": List<String>,             // Columnas usadas de A
+    "columnasClaveB": List<String>              // Columnas usadas de B
+}
 ```
 
 ---
 
-## 6. SEGURIDAD
+## 7. LOGICA DE CRUCE
 
-### 6.1 Validaciones Implementadas
+### 7.1 Modo TODAS (AND)
 
-| Validacion | Limite | Descripcion |
-|------------|--------|-------------|
-| Tamano archivo | 500 MB | Maximo por archivo de entrada |
-| Filas por hoja | 1,000,000 | Limite de procesamiento |
-| Columnas | 500 | Maximo por hoja |
-| Tamano celda | 32,767 chars | Truncado automatico |
-| Permisos | Verificacion | Lectura antes de procesar |
-
-### 6.2 Buenas Practicas
-
-- No se registran datos sensibles en logs
-- Validacion de extension (.xlsx unicamente)
-- Excepciones controladas sin exposicion de stack traces
-- Memoria gestionada con streaming para archivos grandes
-
----
-
-## 7. INSTALACION Y DISTRIBUCION
-
-### 7.1 Compilar
-
-```bash
-cd cuadre-archivos
-mvn clean package
-```
-
-### 7.2 Estructura de Distribucion
+Todas las columnas seleccionadas deben coincidir:
 
 ```
-distribucion/
-├── cuadre-archivos-1.0.jar    # JAR sombreado (todo en uno)
-├── cuadre.bat                   # Script de ejecucion
-└── README.txt                   # Guia rapida
+CRUCE = (PK_A == PK_B) AND (Key1_A == Key1_B) AND (Key2_A == Key2_B)
 ```
 
-### 7.3 Requisitos del Sistema
+**Ejemplo**: Si se seleccionan `numero_cuenta` y `fecha`, ambos valores deben existir tanto en A como en B.
 
-- Java 8 o superior (JRE)
-- Windows 7/10/11, Linux, macOS
-- 4 GB RAM minimo (8 GB recomendado)
-- 100 MB espacio en disco
+### 7.2 Modo CUALQUIERA (OR)
 
-### 7.4 Ejecucion
-
-```bash
-# Opcion 1: JAR directo
-java -jar cuadre-archivos-1.0.jar
-
-# Opcion 2: Script BAT
-cuadre.bat
-
-# Opcion 3: Con mas memoria
-java -Xmx2g -jar cuadre-archivos-1.0.jar
-```
-
----
-
-## 8. ESTRUCTURA DEL EXCEL GENERADO
-
-### 8.1 Hoja 1: Resumen
+Al menos una columna debe coincidir:
 
 ```
-+------------------------------------------+
-| BANCO DAVIVIENDA                          |
-| Informe de Validacion - Cruce de Archivos |
-+------------------------------------------+
-| Estadisticas                               |
-|   Total registros Archivo A: 1000        |
-|   Cuentas ENCONTRADAS: 980              |
-|   Cuentas NO encontradas: 20             |
-|   Porcentaje efectividad: 98.0%          |
-+------------------------------------------+
-| Relaciones de Columnas                     |
-|   1. numero_cuenta > numero_cuenta       |
-|   2. fecha > fecha                      |
-+------------------------------------------+
+CRUCE = (PK_A == PK_B) OR (Key1_A == Key1_B) OR (Key2_A == Key2_B)
 ```
 
-### 8.2 Hojas 2-4: Datos
+**Ejemplo**: Si se seleccionan `numero_cuenta` y `fecha`, el registro se considera encontrado si coincide cualquiera de los dos.
 
-| Columna | Descripcion |
-|---------|-------------|
-| [Datos originales] | Todas las columnas del Archivo A |
-| CRUCE_ESTADO | ENCONTRADO / NO ENCONTRADO |
-| CRUCE_CLAVE | Valor de la clave de cruce |
-| COINCIDENCIAS_EN_B | Numero de coincidencias |
-
-### 8.3 Resaltado Visual
-
-- **Headers**: Fondo rojo, texto blanco
-- **Primary Key**: Fondo rosa, texto rojo negrita
-- **ENCONTRADO**: Texto verde negrita
-- **NO ENCONTRADO**: Texto rojo negrita
-
----
-
-## 9. MODO DE CRUCE
-
-### 9.1 Logica AND (TODAS)
-
-Todas las columnas seleccionadas deben coincidir para considerar el registro como "encontrado".
-
-```
-PK (obligatorio) AND Key1 AND Key2 AND ...
-```
-
-### 9.2 Logica OR (CUALQUIERA)
-
-Al menos una columna debe coincidir.
-
-```
-PK (obligatorio) OR Key1 OR Key2 OR ...
-```
-
----
-
-## 10. NORMALIZACION DE DATOS
-
-### 10.1 Reglas
+### 7.3 Normalizacion de Datos
 
 | Entrada | Salida | Ejemplo |
 |---------|--------|---------|
-| Con ceros izquierda | Sin ceros | "00123" → "123" |
+| Numerico con ceros | Sin ceros izquierda | "00123" → "123" |
 | Mayusculas | Minusculas | "ABC" → "abc" |
-| Espacios | Eliminados | " abc " → "abc" |
-| Numericos | Enteros | "001" → "1" |
+| Con espacios | Sin espacios | " abc " → "abc" |
+| Decimal | Entero | "001" → "1" |
+| Null/Vacio | Cadena vacia | null → "" |
 
 ---
 
-## 11. CONTACTOS Y SOPORTE
+## 8. ESTILOS EXCEL (OUTPUT)
 
-Para soporte tecnico o reporte de errores, contacte al equipo de desarrollo.
+### 8.1 Colores Davivienda
+
+| Color | Hex | RGB | Uso |
+|-------|-----|-----|-----|
+| Rojo Davivienda | #D2141E | (210, 20, 30) | Headers |
+| Rosa PK | #FFC0CB | (255, 192, 203) | Columnas Primary Key |
+| Verde | #008000 | (0, 128, 0) | Estado: Encontrado |
+| Rojo Error | #FF0000 | (255, 0, 0) | Estado: No encontrado |
+| Blanco | #FFFFFF | (255, 255, 255) | Fondo datos |
+
+### 8.2 Estructura del Excel Generado
+
+**Hoja 1: Resumen**
+```
++------------------------------------------+
+|  BANCO DAVIVIENDA                        |
+|  Informe de Validacion - Cruce de Archivos|
++------------------------------------------+
+| Estadisticas                              |
+|   Total registros: 1000                   |
+|   Encontrados: 980                       |
+|   No encontrados: 20                      |
+|   Porcentaje: 98.0%                      |
++------------------------------------------+
+| Relaciones configuradas                   |
+|   numero_cuenta > numero_cuenta (PK)     |
+|   fecha > fecha                          |
++------------------------------------------+
+```
+
+**Hoja 2: Todos** - Todos los registros de A con estado
+**Hoja 3: Verificados** - Solo registros encontrados en B
+**Hoja 4: No Encontrados** - Solo registros no hallados en B
+
+---
+
+## 9. SEGURIDAD Y VALIDACIONES
+
+### 9.1 Validaciones de Entrada
+
+| Validacion | Limite | Accion |
+|------------|--------|--------|
+| Extension archivo | .xlsx | Solo se acepta Excel 2007+ |
+| Tamano archivo | 500 MB | Rechazo con mensaje |
+| Filas por hoja | 1,000,000 | Warning, procesamiento parcial |
+| Columnas | 500 | Soporte completo |
+| Tamano celda | 32,767 chars | Truncado automatico |
+
+### 9.2 Buenas Practicas Implementadas
+
+- No se registran datos sensibles en logs
+- Validacion de permisos de lectura antes de procesar
+- Excepciones controladas sin exposicion de stack traces
+- No se almacenan datos en cache persistentes
+
+### 9.3 Configuracion de Logs
+
+Archivo: `src/main/resources/logback.xml`
+
+```xml
+<configuration>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+    </appender>
+    
+    <logger name="com.banco.cuadre" level="INFO" />
+    <logger name="org.apache.poi" level="WARN" />
+    
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+    </root>
+</configuration>
+```
+
+---
+
+## 10. COMPILACION Y DISTRIBUCION
+
+### 10.1 Compilar
+
+```bash
+mvn clean package
+```
+
+Resultado: `target/cuadre-archivos-1.0.0.jar` (~19 MB, uber-jar con todas las dependencias)
+
+### 10.2 Ejecutar
+
+```batch
+java -jar cuadre-archivos-1.0.0.jar
+```
+
+O usando el script:
+```batch
+run.bat
+```
+
+### 10.3 Con Mas Memoria (Archivos Grandes)
+
+```batch
+java -Xmx2g -jar cuadre-archivos-1.0.0.jar
+```
+
+### 10.4 Requisitos del Sistema
+
+| Recurso | Minimo | Recomendado |
+|---------|--------|-------------|
+| Java | JRE 8+ | JRE 11+ |
+| RAM | 2 GB | 4 GB |
+| Disco | 100 MB | 200 MB |
+| OS | Windows 7 | Windows 10/11 |
+
+---
+
+## 11. CI/CD - GITHUB ACTIONS
+
+El proyecto incluye pipeline de integracion continua en `.github/workflows/java-ci.yml`:
+
+```yaml
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '8'
+      - run: mvn clean package
+      - run: mvn test
+```
+
+---
+
+## 12. PRUEBAS UNITARIAS
+
+Ubicacion: `src/test/java/com/banco/cuadre/ValidadorCruceTest.java`
+
+Ejecutar:
+```bash
+mvn test
+```
+
+Pruebas implementadas:
+- Normalizacion de numeros con ceros izquierda
+- Normalizacion de texto (mayusculas/minusculas)
+- Comparacion de valores normalizados
+
+---
+
+## 13. MIGRACION A OTRO PROYECTO
+
+Para incluir esta aplicacion en otro proyecto Java:
+
+1. **Copiar clases**:
+   - `src/main/java/com/banco/cuadre/*.java`
+   - `src/main/resources/logback.xml`
+
+2. **Agregar dependencias** (seccion 3.1)
+
+3. **Compilar como JAR**:
+   ```bash
+   mvn clean package
+   ```
+
+4. **Ejecutar**:
+   ```bash
+   java -jar target/cuadre-archivos-1.0.0.jar
+   ```
+
+---
 
 **Version**: 1.0.0  
-**Ultima actualizacion**: 2026
+**Ultima actualizacion**: 2026-04-16
