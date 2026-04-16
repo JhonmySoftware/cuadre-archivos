@@ -1,27 +1,43 @@
-# Cuadre de Archivos
+# File Comparator - Cuadre de Archivos
 
 ![Java](https://img.shields.io/badge/Java-1.8+-ED8B00?style=flat-square&logo=java&logoColor=white)
 ![Maven](https://img.shields.io/badge/Maven-3.6+-C71A36?style=flat-square&logo=apache-maven&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 
-Aplicacion de escritorio para validacion y cruce de archivos Excel en el area funcional de Banco Davivienda.
+Aplicacion de escritorio para validacion y cruce de archivos Excel. Compara datos entre dos archivos y genera reportes detallados con estadisticas de coincidencias.
 
-## Proposito
+## Que puedes hacer con esta aplicacion?
 
-Verificar que la informacion contenida en un archivo Excel (Origen) haya sido correctamente transferida a otro archivo Excel (Destino), generando un reporte detallado con estadisticas y diferencias.
+### Casos de uso principales:
 
-## Caracteristicas
+| Caso | Descripcion |
+|------|-------------|
+| **Validacion de migraciones** | Verificar que los datos迁移 correctamente entre sistemas |
+| **Auditoria de datos** | Comparar exportaciones de bases de datos |
+| **Control de calidad** | Detectar inconsistencias en archivos de datos |
+| **Reconciliacion** | Cruzar archivos de diferentes fuentes |
+| **Generacion de reportes** | Producir informes ejecutivos para analisis |
+
+### Caracteristicas avanzadas:
+
+- **Cruce por multiples columnas** - Usa una o varias columnas como clave
+- **Modo AND/OR** - Todas las claves coinciden O al menos una
+- **Normalizacion automatica** - Elimina ceros a la izquierda, normaliza texto
+- **Archivos grandes** - Soporta hasta 500 MB por archivo
+- **Multi-hoja** - Procesa cualquier hoja del Excel
+- **Reportes estilizados** - Excel con formatos profesionales
+
+## Caracteristicas tecnicas
 
 - **GUI Swing** intuitiva y responsive
 - **Relaciones configurables** (Primary Key + Keys adicionales)
 - **Modos de cruce**: TODAS (AND) / CUALQUIERA (OR)
-- **Normalizacion automatica** de datos (ceros a la izquierda, mayusculas/minusculas)
+- **Normalizacion automatica** de datos
 - **Reportes en Excel** con 4 hojas:
   - Resumen de estadisticas
   - Todos los registros
   - Registros verificados
   - Registros no encontrados
-- **Estilos Davivienda** en el Excel de salida
 - **Compatible** con Java 8+
 
 ## Requisitos
@@ -43,19 +59,20 @@ cd cuadre-archivos
 mvn clean package
 
 # Ejecutar
-java -jar target/cuadre-archivos-1.0.jar
+java -jar target/cuadre-archivos-1.0.0.jar
 ```
 
 ### Usar el JAR directamente
 
+Descarga el release y ejecuta:
 ```bash
-java -jar cuadre-archivos-1.0.jar
+java -jar cuadre-archivos-1.0.0.jar
 ```
 
 ### Con mas memoria (archivos grandes)
 
 ```bash
-java -Xmx2g -jar cuadre-archivos-1.0.jar
+java -Xmx2g -jar cuadre-archivos-1.0.0.jar
 ```
 
 ## Estructura del Proyecto
@@ -65,31 +82,53 @@ cuadre-archivos/
 ├── pom.xml                          # Configuracion Maven
 ├── src/main/java/com/banco/cuadre/
 │   ├── CuadreApp.java              # Interfaz grafica (Swing)
-│   ├── LectorExcel.java           # Lectura de archivos Excel
-│   ├── ValidadorCruce.java        # Logica de cruce de datos
-│   └── EscritorExcel.java         # Generacion de reportes Excel
+│   ├── LectorExcel.java            # Lectura de archivos Excel
+│   ├── ValidadorCruce.java         # Logica de cruce de datos
+│   ├── EscritorExcel.java          # Generacion de reportes Excel
+│   └── EjemplosUso.java            # Ejemplos de integracion
 ├── src/main/resources/
-│   └── logback.xml                # Configuracion de logs
+│   └── logback.xml                 # Configuracion de logs
 ├── src/test/java/                  # Pruebas unitarias
+├── GUIA_INTEGRACION.md             # Guia para desarrolladores
 ├── DOCUMENTACION_TECNICA.md        # Documentacion tecnica
-├── DOCUMENTACION_FUNCIONAL.md     # Manual de usuario
+├── DOCUMENTACION_FUNCIONAL.md      # Manual de usuario
 └── LICENSE
 ```
 
-## Configuracion
+## Integracion en otros proyectos
 
-El archivo `pom.xml` contiene todas las dependencias:
+Esta aplicacion puede integrarse como libreria en otros proyectos Java. Ver [GUIA_INTEGRACION.md](GUIA_INTEGRACION.md) para ejemplos detallados.
 
-| Dependencia | Version | Proposito |
-|-------------|---------|-----------|
-| Apache POI | 5.2.5 | Lectura/escritura Excel |
-| SLF4J | 2.0.11 | Logging |
-| Logback | 1.4.14 | Implementacion de logging |
+### Uso basico:
+
+```java
+// Leer archivos
+LectorExcel lector = new LectorExcel();
+LectorExcel.InfoArchivo archivoA = lector.leerArchivo("origen.xlsx");
+LectorExcel.InfoArchivo archivoB = lector.leerArchivo("destino.xlsx");
+
+// Configurar cruce
+List<String> colsA = Arrays.asList("id_cliente", "fecha");
+List<String> colsB = Arrays.asList("cliente_id", "fec_mov");
+
+// Ejecutar
+ValidadorCruce validador = new ValidadorCruce();
+Map<String, Object> resultado = validador.generarResultadoConModo(
+    archivoA.hojas.get(0).datos, colsA,
+    archivoB.hojas.get(0).datos, colsB,
+    null, false
+);
+
+// Generar reporte
+EscritorExcel escritor = new EscritorExcel();
+escritor.guardarResultadoNuevo(resultado, "resultado.xlsx", null);
+```
 
 ## Documentacion
 
-- [Manual de Usuario](DOCUMENTACION_FUNCIONAL.md)
-- [Documentacion Tecnica](DOCUMENTACION_TECNICA.md)
+- [Guia de Integracion](GUIA_INTEGRACION.md) - Como usar en codigo
+- [Manual de Usuario](DOCUMENTACION_FUNCIONAL.md) - Guia de la interfaz
+- [Documentacion Tecnica](DOCUMENTACION_TECNICA.md) - Referencia completa
 
 ## Contribuir
 
@@ -103,10 +142,6 @@ El archivo `pom.xml` contiene todas las dependencias:
 
 Este proyecto esta bajo la licencia MIT. Ver [LICENSE](LICENSE) para mas detalles.
 
-## Autor
-
-Desarrollado para **Banco Davivienda**
-
 ---
 
-*Si te es util, dale una estrella ⭐*
+*Si te es util, dale una estrella*

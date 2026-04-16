@@ -14,7 +14,7 @@ import java.util.*;
  * Esta clase crea archivos Excel con 4 hojas que contienen el analisis completo
  * del cruce de datos, incluyendo estadisticas, registros verificados y no encontrados.
  * 
- * Colores institucionales Davivienda aplicados:
+ * Colores institucionales aplicados:
  * - Headers: Fondo rojo (#D2141E), texto blanco
  * - Primary Key: Fondo rosa (#FFC0CB), texto rojo
  * - Estados: Verde para encontrados, rojo para no encontrados
@@ -25,7 +25,7 @@ import java.util.*;
  * - Hoja 3: Verificados - Solo registros encontrados
  * - Hoja 4: No Encontrados - Solo registros no hallados
  * 
- * @author Banco Davivienda
+ * @author Equipo de Desarrollo
  * @version 1.0.0
  */
 public class EscritorExcel {

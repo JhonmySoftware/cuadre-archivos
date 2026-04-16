@@ -1,27 +1,49 @@
-# GUIA DE INTEGRACION - CUADRE DE ARCHIVOS
+# GUIA DE INTEGRACION - FILE COMPARATOR
 
 Esta guia explica como usar las clases de cruce de datos en cualquier proyecto Java.
 
 ---
 
-## 1. CLASES DISPONIBLES
+## 1. CAPACIDADES DEL PROYECTO
 
-| Clase | Proposito |
-|-------|-----------|
-| `LectorExcel` | Leer archivos Excel (.xlsx) |
-| `ValidadorCruce` | Cruzar datos entre dos conjuntos |
-| `EscritorExcel` | Generar reporte Excel con resultados |
+### Que puedes validar?
+
+| Tipo de validacion | Ejemplo |
+|--------------------|---------|
+| Migracion de datos | Verificar que clientes迁移 correctamente |
+| Exportaciones | Comparar CSV de diferentes sistemas |
+| Archivos de bancos | Cruzar movimientos con extractos |
+| Inventarios | Validar existencia vs. mouvements |
+| Auditoria | Detectar cambios no autorizados |
+
+### Caracteristicas clave:
+
+- **Normalizacion inteligente**: Elimina ceros a la izquierda, normaliza mayusculas
+- **Multi-columna**: Usa varias columnas para mayor precision
+- **Modos flexibles**: AND (todas coinciden) u OR (al menos una)
+- **Archivos grandes**: Hasta 500 MB por archivo
+- **Multi-hoja**: Procesa cualquier hoja del Excel
 
 ---
 
-## 2. ESTRUCTURA DE DATOS
+## 2. CLASES DISPONIBLES
+
+| Clase | Proposito | Metodo principal |
+|-------|-----------|------------------|
+| `LectorExcel` | Leer archivos Excel | `leerArchivo(ruta)` |
+| `ValidadorCruce` | Cruzar datos | `generarResultadoConModo(...)` |
+| `EscritorExcel` | Generar reportes | `guardarResultadoNuevo(...)` |
+
+---
+
+## 3. ESTRUCTURA DE DATOS
 
 Los datos se manejan como `List<Map<String, String>>`:
 
 ```java
 // Cada registro es un Map donde la clave es el nombre de la columna
 Map<String, String> registro = new HashMap<>();
-registro.put("numero_cuenta", "12345");
+registro.put("id_cliente", "12345");
 registro.put("nombre", "Juan Perez");
 registro.put("saldo", "100000");
 
@@ -32,9 +54,9 @@ datos.add(registro);
 
 ---
 
-## 3. PASO A PASO COMPLETO
+## 4. PASO A PASO COMPLETO
 
-### 3.1 Leer Archivos Excel
+### 4.1 Leer Archivos Excel
 
 ```java
 // Crear instancia del lector
@@ -55,7 +77,7 @@ System.out.println("Columnas: " + hojaA.encabezados);  // ["col1", "col2", ...]
 System.out.println("Registros: " + hojaA.datos.size()); // numero de filas
 ```
 
-### 3.2 Configurar Columnas de Cruce
+### 4.2 Configurar Columnas de Cruce
 
 ```java
 // Definir que columnas usar para el cruce
@@ -63,12 +85,12 @@ System.out.println("Registros: " + hojaA.datos.size()); // numero de filas
 List<String> columnasA = Arrays.asList("numero_cuenta");
 List<String> columnasB = Arrays.asList("numero_cuenta");
 
-// Cruce con multiples columnas (todas deben existir en ambos archivos)
+// Cruce con multiples columnas
 List<String> columnasA = Arrays.asList("numero_cuenta", "fecha");
 List<String> columnasB = Arrays.asList("num_cuenta", "fecha_trans");
 ```
 
-### 3.3 Ejecutar el Cruce
+### 4.3 Ejecutar el Cruce
 
 ```java
 // Crear validador
@@ -85,7 +107,7 @@ Map<String, Object> resultado = validador.generarResultadoConModo(
 );
 ```
 
-### 3.4 Generar Reporte Excel
+### 4.4 Generar Reporte Excel
 
 ```java
 // Crear escritor
@@ -101,7 +123,7 @@ escritor.guardarResultadoNuevo(
 
 ---
 
-## 4. MODOS DE CRUCE
+## 5. MODOS DE CRUCE
 
 ### Modo AND (TODAS) - `matchAny = false`
 
@@ -125,9 +147,9 @@ validador.generarResultadoConModo(datosA, colsA, datosB, colsB, null, true);
 
 ---
 
-## 5. OBTENER RESULTADOS
+## 6. OBTENER RESULTADOS
 
-### 5.1 Estadisticas
+### 6.1 Estadisticas
 
 ```java
 Map<String, String> estadisticas = (Map<String, String>) resultado.get("estadisticas");
@@ -138,7 +160,7 @@ String noEncontrados = estadisticas.get("Cuentas NO encontradas (unicas)");
 String porcentaje = estadisticas.get("Porcentaje efectividad");
 ```
 
-### 5.2 Solo Encontrados
+### 6.2 Solo Encontrados
 
 ```java
 List<Map<String, String>> verificados = (List<Map<String, String>>) resultado.get("verificados");
@@ -150,7 +172,7 @@ for (Map<String, String> registro : verificados) {
 }
 ```
 
-### 5.3 Solo No Encontrados
+### 6.3 Solo No Encontrados
 
 ```java
 List<Map<String, String>> noEncontrados = (List<Map<String, String>>) resultado.get("noEncontrados");
@@ -161,7 +183,7 @@ for (Map<String, String> registro : noEncontrados) {
 }
 ```
 
-### 5.4 Todos con Estado
+### 6.4 Todos con Estado
 
 ```java
 List<Map<String, String>> todos = (List<Map<String, String>>) resultado.get("resultadoA");
@@ -175,7 +197,7 @@ for (Map<String, String> registro : todos) {
 
 ---
 
-## 6. CALLBACK DE PROGRESO
+## 7. CALLBACK DE PROGRESO
 
 Para archivos grandes, puedes mostrar progreso:
 
@@ -190,7 +212,54 @@ escritor.guardarResultadoNuevo(resultado, "salida.xlsx", new EscritorExcel.Progr
 
 ---
 
-## 7. EJEMPLO COMPLETO EN UNA SOLA CLASE
+## 8. NORMALIZACION DE DATOS
+
+El sistema normaliza automaticamente:
+
+| Entrada | Salida | Ejemplo |
+|---------|--------|---------|
+| Numerico con ceros | Sin ceros izquierda | "00123" → "123" |
+| Mayusculas | Minusculas | "ABC" → "abc" |
+| Espacios | Eliminados | " abc " → "abc" |
+| Decimal | Entero | "001" → "1" |
+
+---
+
+## 9. ESTRUCTURA DEL REPORTE GENERADO
+
+El archivo Excel contiene 4 hojas:
+
+### Hoja 1: Resumen
+- Estadisticas generales
+- Porcentaje de efectividad
+- Relaciones configuradas
+
+### Hoja 2: Todos
+- Todos los registros del archivo A
+- Columnas de estado agregadas
+
+### Hoja 3: Verificados
+- Solo registros encontrados en B
+
+### Hoja 4: No Encontrados
+- Solo registros NO encontrados en B
+
+---
+
+## 10. COLUMNAS AGREGADAS POR EL CRUCE
+
+A cada registro se le agregan estas columnas:
+
+| Columna | Descripcion |
+|---------|------------|
+| CRUCE_ESTADO | "ENCONTRADO" o "NO ENCONTRADO" |
+| CRUCE_CLAVE | Valor de la clave de cruce |
+| COINCIDENCIAS_EN_B | Numero de coincidencias en archivo B |
+| CRUCE_MODO | "AND" o "OR" |
+
+---
+
+## 11. EJEMPLO COMPLETO EN UNA SOLA CLASE
 
 ```java
 package com.miproyecto;
@@ -242,9 +311,9 @@ public class MiCruce {
 
 ---
 
-## 8. IMPORTAR EN OTRO PROYECTO
+## 12. IMPORTAR EN OTRO PROYECTO
 
-### 8.1 Copiar clases necesarias
+### 12.1 Copiar clases necesarias
 
 ```
 src/main/java/com/banco/cuadre/
@@ -253,7 +322,7 @@ src/main/java/com/banco/cuadre/
 └── EscritorExcel.java      ← Copiar
 ```
 
-### 8.2 Agregar dependencia Maven
+### 12.2 Agregar dependencia Maven
 
 ```xml
 <dependency>
@@ -263,7 +332,7 @@ src/main/java/com/banco/cuadre/
 </dependency>
 ```
 
-### 8.3 Compilar
+### 12.3 Compilar
 
 ```bash
 mvn clean compile
@@ -271,13 +340,12 @@ mvn clean compile
 
 ---
 
-## 9. LIMITACIONES Y NOTAS
+## 13. LIMITACIONES
 
 - Solo soporta archivos `.xlsx` (Excel 2007+)
 - Tamanio maximo de archivo: 500 MB
 - Maximo de filas por hoja: 1,000,000
 - Maximo de columnas: 500
-- La normalizacion elimina ceros a la izquierda en numeros
 
 ---
 

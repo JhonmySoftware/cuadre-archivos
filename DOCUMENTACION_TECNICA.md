@@ -1,5 +1,5 @@
 # DOCUMENTACION TECNICA
-## Cuadre de Archivos - Banco Davivienda
+## Cuadre de Archivos - File Comparator
 
 ---
 
@@ -9,7 +9,7 @@
 |-------|-------|
 | **Nombre** | Cuadre de Archivos |
 | **Version** | 1.0.0 |
-| **Empresa** | Banco Davivienda |
+| **Empresa** | Equipo de Desarrollo |
 | **Proposito** | Validacion y cruce de archivos Excel |
 | **Java** | 1.8+ |
 | **Repositorio** | https://github.com/JhonmySoftware/cuadre-archivos |
@@ -161,7 +161,7 @@ cuadre-archivos/
 
 **Responsabilidad**: Interfaz grafica de usuario.
 
-**Constantes de Color Davivienda**:
+**Constantes de Color**:
 ```java
 private static final Color DAVI_ROJO = new Color(210, 20, 30);
 private static final Color DAVI_ROJO_OSCURO = new Color(160, 15, 25);
@@ -316,11 +316,11 @@ CRUCE = (PK_A == PK_B) OR (Key1_A == Key1_B) OR (Key2_A == Key2_B)
 
 ## 8. ESTILOS EXCEL (OUTPUT)
 
-### 8.1 Colores Davivienda
+### 8.1 Colores
 
 | Color | Hex | RGB | Uso |
 |-------|-----|-----|-----|
-| Rojo Davivienda | #D2141E | (210, 20, 30) | Headers |
+| Rojo Principal | #D2141E | (210, 20, 30) | Headers |
 | Rosa PK | #FFC0CB | (255, 192, 203) | Columnas Primary Key |
 | Verde | #008000 | (0, 128, 0) | Estado: Encontrado |
 | Rojo Error | #FF0000 | (255, 0, 0) | Estado: No encontrado |

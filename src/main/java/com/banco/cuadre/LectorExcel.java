@@ -21,7 +21,7 @@ import java.util.*;
  * - Maximo de columnas por hoja: 500
  * - Largo maximo de celda: 32,767 caracteres
  * 
- * @author Banco Davivienda
+ * @author Equipo de Desarrollo
  * @version 1.0.0
  */
 public class LectorExcel {

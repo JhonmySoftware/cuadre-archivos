@@ -13,9 +13,9 @@ import java.util.List;
 /**
  * CuadreApp - Aplicacion GUI para cruce de archivos Excel.
  * 
- * Aplicacion de escritorio desarrollada para Banco Davivienda que permite
- * validar que la informacion de un archivo Excel (Archivo A - Origen) haya
- * sido correctamente transferida a otro archivo Excel (Archivo B - Destino).
+ * Aplicacion de escritorio que permite comparar y validar que la informacion
+ * contenida en un archivo Excel (Archivo A - Origen) haya sido correctamente
+ * transferida a otro archivo Excel (Archivo B - Destino).
  * 
  * CARACTERISTICAS PRINCIPALES:
  * - Seleccion visual de archivos Excel (Origen y Destino)
@@ -25,8 +25,9 @@ import java.util.List;
  * - Normalizacion automatica de datos (ceros izquierda)
  * - Generacion de reporte Excel con 4 hojas
  * - Barra de progreso durante procesamiento
+ * - Filtros de busqueda en listas de columnas
  * 
- * COLORES INSTITUCIONALES DAVIVIENDA:
+ * COLORES:
  * - Rojo: #D2141E (headers, elementos principales)
  * - Rosa: #FFC0CB (columnas Primary Key)
  * - Blanco: #FFFFFF (fondo de datos)
@@ -37,7 +38,15 @@ import java.util.List;
  * 3. Verificados: Solo registros encontrados
  * 4. No Encontrados: Solo registros no hallados
  * 
- * @author Banco Davivienda
+ * CAPACIDADES DEL PROYECTO:
+ * - Validar migraciones de datos entre sistemas
+ * - Auditar transferencias de informacion
+ * - Detectar inconsistencias en cruces de archivos
+ * - Generar reportes ejecutivos para analisis
+ * - Soportar archivos grandes (hasta 500 MB)
+ * - Procesar multiples hojas por archivo
+ * 
+ * @author Equipo de Desarrollo
  * @version 1.0.0
  * @see LectorExcel
  * @see ValidadorCruce
@@ -45,7 +54,7 @@ import java.util.List;
  */
 public class CuadreApp extends JFrame {
     
-    /** Color institucional rojo Davivienda - #D2141E */
+    /** Color rojo principal - #D2141E */
     private static final Color DAVI_ROJO = new Color(210, 20, 30);
     
     /** Color rojo oscuro para hover */
@@ -201,7 +210,7 @@ public class CuadreApp extends JFrame {
      * @see #crearInterfaz()
      */
     public CuadreApp() {
-        setTitle("Cuadre de Archivos - Banco Davivienda");
+        setTitle("Cuadre de Archivos - File Comparator");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         
         try {
@@ -256,7 +265,7 @@ public class CuadreApp extends JFrame {
         texto.setOpaque(false);
         texto.setLayout(new BoxLayout(texto, BoxLayout.Y_AXIS));
         
-        JLabel lblDavivienda = new JLabel("BANCO DAVIVIENDA");
+        JLabel lblDavivienda = new JLabel("FILE COMPARATOR");
         lblDavivienda.setFont(new Font("Segoe UI", Font.BOLD, 11));
         lblDavivienda.setForeground(DAVI_ROJO);
         lblDavivienda.setAlignmentX(Component.LEFT_ALIGNMENT);

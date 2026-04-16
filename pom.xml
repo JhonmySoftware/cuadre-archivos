@@ -11,7 +11,7 @@
     <packaging>jar</packaging>
     
     <name>Cuadre de Archivos</name>
-    <description>Aplicacion para validacion y cruce de archivos Excel - Banco Davivienda</description>
+    <description>Aplicacion para validacion y cruce de archivos Excel</description>
     <url>https://github.com/JhonmySoftware/cuadre-archivos</url>
     
     <properties>
@@ -167,7 +167,7 @@
     <developers>
         <developer>
             <name>Equipo de Desarrollo</name>
-            <organization>Banco Davivienda</organization>
+            <organization>Equipo de Desarrollo</organization>
         </developer>
     </developers>
     

@@ -1,5 +1,5 @@
 # CUADRE DE ARCHIVOS - MANUAL DE USUARIO
-## Banco Davivienda
+## File Comparator
 
 ---
 
@@ -223,5 +223,4 @@ R: 500 MB por archivo. Para archivos mayores, divida en partes.
 Para soporte tecnico o reporte de problemas, contacte al equipo de desarrollo.
 
 **Version**: 1.0.0  
-**Desarrollado para**: Banco Davivienda  
 **Fecha**: 2026

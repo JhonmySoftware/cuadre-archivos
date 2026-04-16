@@ -27,7 +27,7 @@ import java.util.*;
  *     datosA, columnasA, datosB, columnasB, null, false);
  * </pre>
  * 
- * @author Banco Davivienda
+ * @author Equipo de Desarrollo
  * @version 1.0.0
  */
 public class ValidadorCruce {
