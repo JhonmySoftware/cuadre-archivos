@@ -8,25 +8,96 @@ import org.slf4j.LoggerFactory;
 import java.io.FileOutputStream;
 import java.util.*;
 
+/**
+ * EscritorExcel - Generador de reportes Excel estilizados para resultados de cruce.
+ * 
+ * Esta clase crea archivos Excel con 4 hojas que contienen el analisis completo
+ * del cruce de datos, incluyendo estadisticas, registros verificados y no encontrados.
+ * 
+ * Colores institucionales Davivienda aplicados:
+ * - Headers: Fondo rojo (#D2141E), texto blanco
+ * - Primary Key: Fondo rosa (#FFC0CB), texto rojo
+ * - Estados: Verde para encontrados, rojo para no encontrados
+ * 
+ * Estructura del archivo generado:
+ * - Hoja 1: Resumen - Estadisticas y relaciones configuradas
+ * - Hoja 2: Todos - Todos los registros con estado de cruce
+ * - Hoja 3: Verificados - Solo registros encontrados
+ * - Hoja 4: No Encontrados - Solo registros no hallados
+ * 
+ * @author Banco Davivienda
+ * @version 1.0.0
+ */
 public class EscritorExcel {
+    
     private static final Logger logger = LoggerFactory.getLogger(EscritorExcel.class);
     
+    /** Workbook de Apache POI con streaming para archivos grandes */
     private SXSSFWorkbook workbook;
     
+    /** Estilo para headers de columna (fondo rojo, texto blanco) */
     private CellStyle styleHeader;
+    
+    /** Estilo para headers alineados a la izquierda */
     private CellStyle styleHeaderLeft;
+    
+    /** Estilo para celdas de datos normales */
     private CellStyle styleCelda;
+    
+    /** Estilo para celdas de datos centradas */
     private CellStyle styleCeldaCenter;
+    
+    /** Estilo para celdas en negrita */
     private CellStyle styleCeldaBold;
+    
+    /** Estilo para estado ENCONTRADO (verde) */
     private CellStyle styleCeldaOk;
+    
+    /** Estilo para estado NO ENCONTRADO (rojo) */
     private CellStyle styleCeldaError;
+    
+    /** Estilo para columnas Primary Key (rosa) */
     private CellStyle styleCeldaPK;
+    
+    /** Estilo para header de Primary Key */
     private CellStyle styleHeaderPK;
     
+    /**
+     * Interfaz de callback para reportar progreso de generacion.
+     * 
+     * Implementar esta interfaz para recibir actualizaciones
+     * del porcentaje de progreso durante la generacion del archivo.
+     */
     public interface ProgressCallback {
+        /**
+         * Called durante la generacion del archivo.
+         * 
+         * @param percent Porcentaje de completado (0-100)
+         * @param message Mensaje descriptivo del estado actual
+         */
         void onProgress(int percent, String message);
     }
     
+    /**
+     * Constructor. Inicializa los estilos que seran usados en el Excel.
+     */
+    public EscritorExcel() {
+    }
+    
+    /**
+     * Crea todos los estilos de celda utilizados en el reporte.
+     * 
+     * Estilos creados:
+     * - styleHeader: Fondo rojo, texto blanco, centrado (para headers)
+     * - styleHeaderLeft: Fondo rojo, texto blanco, izquierda
+     * - styleHeaderPK: Fondo rojo, texto blanco para columna PK
+     * - styleCelda: Fondo blanco, texto negro (datos normales)
+     * - styleCeldaCenter: Fondo blanco, texto negro, centrado
+     * - styleCeldaBold: Fondo blanco, texto negro, negrita
+     * - styleCeldaPK: Fondo rosa, texto rojo, negrita (columnas clave)
+     * - styleCeldaOk: Fondo blanco, texto verde (ENCONTRADO)
+     * - styleCeldaError: Fondo blanco, texto rojo (NO ENCONTRADO)
+     */
     private void crearEstilos() {
         styleHeader = crearEstilo(IndexedColors.RED.getIndex(), IndexedColors.WHITE.getIndex(), true, (short) 10, HorizontalAlignment.CENTER);
         styleHeaderLeft = crearEstilo(IndexedColors.RED.getIndex(), IndexedColors.WHITE.getIndex(), true, (short) 10, HorizontalAlignment.LEFT);
@@ -39,6 +110,16 @@ public class EscritorExcel {
         styleCeldaError = crearEstilo(IndexedColors.WHITE.getIndex(), IndexedColors.RED.getIndex(), true, (short) 10, HorizontalAlignment.CENTER);
     }
     
+    /**
+     * Crea un estilo de celda con configuracion personalizada.
+     * 
+     * @param bgColor Color de fondo (IndexedColors)
+     * @param fontColor Color del texto (IndexedColors)
+     * @param bold Si el texto debe ser negrita
+     * @param fontSize Tamanio de fuente en puntos
+     * @param align Alineacion horizontal del texto
+     * @return CellStyle configurado listo para usar
+     */
     private CellStyle crearEstilo(short bgColor, short fontColor, boolean bold, short fontSize, HorizontalAlignment align) {
         CellStyle style = workbook.createCellStyle();
         style.setFillForegroundColor(bgColor);
@@ -61,6 +142,34 @@ public class EscritorExcel {
         return style;
     }
     
+    /**
+     * Guarda el resultado del cruce en un archivo Excel.
+     * 
+     * Genera un archivo Excel con 4 hojas que contienen:
+     * 1. Resumen: Estadisticas y relaciones configuradas
+     * 2. Todos: Todos los registros del Archivo A con estado
+     * 3. Verificados: Solo registros encontrados en Archivo B
+     * 4. No Encontrados: Solo registros NO hallados en Archivo B
+     * 
+     * @param resultado Mapa con la estructura de resultado del cruce.
+     *                  Debe contener:
+     *                  - resultadoA: List<Map<String, String>> con todos los registros
+     *                  - verificados: List<Map<String, String>> con registros encontrados
+     *                  - noEncontrados: List<Map<String, String>> con registros no hallados
+     *                  - estadisticas: Map<String, String> con estadisticas
+     *                  - columnasClaveA: List<String> con columnas clave de A
+     *                  - columnasClaveB: List<String> con columnas clave de B
+     * @param rutaSalida Ruta completa del archivo de salida (.xlsx)
+     * @param callback Interfaz para reportar progreso (puede ser null)
+     * @throws Exception si ocurre un error al crear el archivo
+     * 
+     * @Ejemplo
+     * <pre>
+     * EscritorExcel escritor = new EscritorExcel();
+     * escritor.guardarResultadoNuevo(resultado, "C:\\reportes\\cruce_2024.xlsx", 
+     *     (percent, msg) -> System.out.println(msg));
+     * </pre>
+     */
     public void guardarResultadoNuevo(
             Map<String, Object> resultado,
             String rutaSalida,
@@ -105,6 +214,19 @@ public class EscritorExcel {
         logger.info("Archivo guardado exitosamente");
     }
     
+    /**
+     * Crea la hoja de Resumen con estadisticas y relaciones.
+     * 
+     * Contenido de la hoja:
+     * - Titulo: "BANCO DAVIVIENDA"
+     * - Subtitulo: "Informe de Validacion - Cruce de Archivos"
+     * - Seccion Estadisticas: Total, encontrados, no encontrados, porcentaje
+     * - Seccion Relaciones: Lista de columnas clave configuradas
+     * 
+     * @param estadisticas Mapa con pares {etiqueta -> valor}
+     * @param columnasClaveA Columnas clave del Archivo A
+     * @param columnasClaveB Columnas clave del Archivo B
+     */
     private void crearHojaResumen(Map<String, String> estadisticas,
             List<String> columnasClaveA, List<String> columnasClaveB) {
         
@@ -190,6 +312,16 @@ public class EscritorExcel {
         sheet.setColumnWidth(3, 5000);
     }
     
+    /**
+     * Crea la hoja "2-Todos" con todos los registros y su estado.
+     * 
+     * Incluye todas las columnas del archivo original mas las columnas
+     * de resultado del cruce (CRUCE_ESTADO, CRUCE_CLAVE, etc.)
+     * 
+     * @param datos Lista de registros con columnas de resultado
+     * @param columnasPK Columnas que son Primary Key (resaltadas en rosa)
+     * @param callback Callback para reportar progreso
+     */
     private void crearHojaTodos(List<Map<String, String>> datos, List<String> columnasPK, ProgressCallback callback) {
         Sheet sheet = workbook.createSheet("2-Todos");
         
@@ -246,6 +378,15 @@ public class EscritorExcel {
         }
     }
     
+    /**
+     * Crea la hoja "3-Verificados" solo con registros encontrados.
+     * 
+     * Mismo formato que crearHojaTodos pero solo incluye registros
+     * cuyo CRUCE_ESTADO sea "ENCONTRADO".
+     * 
+     * @param datos Lista de registros verificados
+     * @param columnasPK Columnas Primary Key para resaltar
+     */
     private void crearHojaVerificados(List<Map<String, String>> datos, List<String> columnasPK) {
         Sheet sheet = workbook.createSheet("3-Verificados");
         
@@ -296,6 +437,15 @@ public class EscritorExcel {
         }
     }
     
+    /**
+     * Crea la hoja "4-No Encontrados" solo con registros no hallados.
+     * 
+     * Mismo formato que crearHojaTodos pero solo incluye registros
+     * cuyo CRUCE_ESTADO sea "NO ENCONTRADO".
+     * 
+     * @param datos Lista de registros no encontrados
+     * @param columnasPK Columnas Primary Key para resaltar
+     */
     private void crearHojaNoEncontrados(List<Map<String, String>> datos, List<String> columnasPK) {
         Sheet sheet = workbook.createSheet("4-No Encontrados");
         

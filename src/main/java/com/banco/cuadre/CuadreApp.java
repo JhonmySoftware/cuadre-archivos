@@ -10,53 +10,161 @@ import java.io.File;
 import java.util.*;
 import java.util.List;
 
+/**
+ * CuadreApp - Aplicacion GUI para cruce de archivos Excel.
+ * 
+ * Aplicacion de escritorio desarrollada para Banco Davivienda que permite
+ * validar que la informacion de un archivo Excel (Archivo A - Origen) haya
+ * sido correctamente transferida a otro archivo Excel (Archivo B - Destino).
+ * 
+ * CARACTERISTICAS PRINCIPALES:
+ * - Seleccion visual de archivos Excel (Origen y Destino)
+ * - Configuracion de relaciones entre columnas
+ * - Diferenciacion entre Primary Key (obligatoria) y Keys adicionales
+ * - Modo de cruce AND (TODAS) / OR (CUALQUIERA)
+ * - Normalizacion automatica de datos (ceros izquierda)
+ * - Generacion de reporte Excel con 4 hojas
+ * - Barra de progreso durante procesamiento
+ * 
+ * COLORES INSTITUCIONALES DAVIVIENDA:
+ * - Rojo: #D2141E (headers, elementos principales)
+ * - Rosa: #FFC0CB (columnas Primary Key)
+ * - Blanco: #FFFFFF (fondo de datos)
+ * 
+ * ESTRUCTURA DEL REPORTE GENERADO:
+ * 1. Resumen: Estadisticas y relaciones configuradas
+ * 2. Todos: Todos los registros con estado
+ * 3. Verificados: Solo registros encontrados
+ * 4. No Encontrados: Solo registros no hallados
+ * 
+ * @author Banco Davivienda
+ * @version 1.0.0
+ * @see LectorExcel
+ * @see ValidadorCruce
+ * @see EscritorExcel
+ */
 public class CuadreApp extends JFrame {
     
+    /** Color institucional rojo Davivienda - #D2141E */
     private static final Color DAVI_ROJO = new Color(210, 20, 30);
+    
+    /** Color rojo oscuro para hover */
     private static final Color DAVI_ROJO_OSCURO = new Color(160, 15, 25);
+    
+    /** Color rojo claro para estados activos */
     private static final Color DAVI_ROJO_CLARO = new Color(220, 40, 50);
+    
+    /** Gris institucional */
     private static final Color DAVI_GRIS = new Color(80, 80, 90);
+    
+    /** Azul oscuro para acentos */
     private static final Color DAVI_AZUL = new Color(30, 50, 80);
     
+    /** Fondo principal de la aplicacion */
     private static final Color BG_PRINCIPAL = new Color(240, 242, 245);
+    
+    /** Fondo blanco para tarjetas/paneles */
     private static final Color BG_CARD = Color.WHITE;
+    
+    /** Fondo para campos de entrada */
     private static final Color BG_INPUT = new Color(250, 251, 253);
+    
+    /** Color de texto principal */
     private static final Color TEXT_PRINCIPAL = new Color(40, 40, 50);
+    
+    /** Color de texto secundario */
     private static final Color TEXT_SECUNDARIO = new Color(100, 110, 120);
+    
+    /** Color de bordes claros */
     private static final Color BORDER_LIGHT = new Color(220, 225, 230);
     
+    /** Informacion del archivo de origen (Archivo A) */
     private LectorExcel.InfoArchivo infoArchivo1;
+    
+    /** Informacion del archivo de destino (Archivo B) */
     private LectorExcel.InfoArchivo infoArchivo2;
     
+    /** ComboBox para seleccionar archivo 1 (origen) */
     private JComboBox<String> cmbArchivo1;
+    
+    /** ComboBox para seleccionar hoja del archivo 1 */
     private JComboBox<String> cmbHoja1;
+    
+    /** ComboBox para seleccionar archivo 2 (destino) */
     private JComboBox<String> cmbArchivo2;
+    
+    /** ComboBox para seleccionar hoja del archivo 2 */
     private JComboBox<String> cmbHoja2;
     
+    /** Panel contenedor de las relaciones configuradas */
     private JPanel panelRelaciones;
+    
+    /** Lista de relaciones configuradas entre columnas */
     private List<RelacionItem> relaciones = new ArrayList<>();
     
+    /** Area de texto para mostrar log de operaciones */
     private JTextArea areaLog;
+    
+    /** Etiqueta de estado en la barra inferior */
     private JLabel lblEstado;
+    
+    /** Barra de progreso para operaciones de larga duracion */
     private JProgressBar barraProgreso;
     
+    /** RadioButton para modo AND (TODAS las claves deben coincidir) */
     private JRadioButton rbMatchAll;
+    
+    /** RadioButton para modo OR (AL MENOS UNA clave debe coincidir) */
     private JRadioButton rbMatchAny;
+    
+    /** Grupo de botones para seleccionar modo de cruce */
     private ButtonGroup bgMatchMode;
     
+    /**
+     * RelacionItem - Representa una relacion entre columnas de los archivos.
+     * 
+     * Cada relacion define como se compara una columna del Archivo A
+     * con una columna del Archivo B.
+     */
     private static class RelacionItem {
+        
+        /** ComboBox con columnas disponibles del Archivo A */
         JComboBox<String> cmbA;
+        
+        /** ComboBox con columnas disponibles del Archivo B */
         JComboBox<String> cmbB;
+        
+        /** Boton para eliminar esta relacion */
         JButton btnEliminar;
+        
+        /** Numero de relacion (1, 2, 3...) */
         JLabel lblNumero;
+        
+        /** Etiqueta que indica si es Primary Key o Key */
         JLabel lblTipo;
+        
+        /** Campo de busqueda/filtro para columnas de A */
         JTextField txtBuscaA;
+        
+        /** Campo de busqueda/filtro para columnas de B */
         JTextField txtBuscaB;
+        
+        /** Modelo de datos para el ComboBox de A */
         DefaultComboBoxModel<String> modeloA;
+        
+        /** Modelo de datos para el ComboBox de B */
         DefaultComboBoxModel<String> modeloB;
+        
+        /** Todas las columnas disponibles en Archivo A */
         List<String> todasColumnasA = new ArrayList<>();
+        
+        /** Todas las columnas disponibles en Archivo B */
         List<String> todasColumnasB = new ArrayList<>();
+        
+        /** Checkbox para marcar si la relacion es obligatoria */
         JCheckBox chkObligatorio;
+        
+        /** True si esta es la Primary Key (primera relacion) */
         boolean esPrimaryKey = false;
     }
     
@@ -84,6 +192,14 @@ public class CuadreApp extends JFrame {
         });
     }
     
+    /**
+     * Constructor principal de la aplicacion.
+     * 
+     * Inicializa la interfaz grafica, establece el Look & Feel del sistema
+     * operativo y maximiza la ventana.
+     * 
+     * @see #crearInterfaz()
+     */
     public CuadreApp() {
         setTitle("Cuadre de Archivos - Banco Davivienda");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -96,6 +212,14 @@ public class CuadreApp extends JFrame {
         setExtendedState(JFrame.MAXIMIZED_BOTH);
     }
     
+    /**
+     * Construye la interfaz grafica completa de la aplicacion.
+     * 
+     * Crea los siguientes componentes:
+     * - Panel norte: Selectores de archivos y hojas
+     * - Panel centro: Configuracion de relaciones
+     * - Panel sur: Log, barra de progreso y botones
+     */
     private void crearInterfaz() {
         setBackground(BG_PRINCIPAL);
         
@@ -932,6 +1056,26 @@ public class CuadreApp extends JFrame {
         return panel;
     }
     
+    /**
+     * Ejecuta el proceso de cruce de archivos.
+     * 
+     * Este metodo es el punto de entrada principal para el proceso de validacion.
+     * Realiza los siguientes pasos:
+     * 1. Valida que ambos archivos esten seleccionados
+     * 2. Valida que exista al menos una relacion configurada
+     * 3. Lee los datos de las hojas seleccionadas
+     * 4. Ejecuta el cruce usando ValidadorCruce
+     * 5. Genera el archivo Excel de resultado usando EscritorExcel
+     * 
+     * El proceso se ejecuta en un hilo separado para no bloquear la UI.
+     * Durante la ejecucion se actualiza:
+     * - La barra de progreso
+     * - El area de log
+     * - La etiqueta de estado
+     * 
+     * @see ValidadorCruce#generarResultadoConModo
+     * @see EscritorExcel#guardarResultadoNuevo
+     */
     private void ejecutarCruce() {
         if (infoArchivo1 == null || infoArchivo2 == null) {
             JOptionPane.showMessageDialog(this, "Seleccione ambos archivos primero", "Error", JOptionPane.WARNING_MESSAGE);
@@ -1075,6 +1219,20 @@ public class CuadreApp extends JFrame {
         });
     }
     
+    /**
+     * Punto de entrada principal de la aplicacion.
+     * 
+     * Inicializa la aplicacion Swing estableciendo primero el Look & Feel
+     * del sistema operativo para una apariencia nativa, y luego creando
+     * y mostrando la ventana principal.
+     * 
+     * @param args Argumentos de linea de comando (no utilizados)
+     * 
+     * @Ejemplo de ejecucion
+     * <pre>
+     * java -jar cuadre-archivos-1.0.0.jar
+     * </pre>
+     */
     public static void main(String[] args) {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());

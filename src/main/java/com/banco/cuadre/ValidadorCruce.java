@@ -2,25 +2,101 @@ package com.banco.cuadre;
 
 import java.util.*;
 
+/**
+ * ValidadorCruce - Logica de negocio para cruce de archivos de datos.
+ * 
+ * Esta clase implementa los algoritmos para comparar registros entre dos
+ * conjuntos de datos (Archivo A y Archivo B) y determinar coincidencias
+ * basado en columnas clave configurables.
+ * 
+ * Caracteristicas principales:
+ * - Soporte para multiples columnas clave
+ * - Normalizacion automatica de datos (ceros izquierda, mayusculas/minusculas)
+ * - Modo AND (todas las claves deben coincidir)
+ * - Modo OR (al menos una clave debe coincidir)
+ * - Generacion de estadisticas de cruce
+ * 
+ * Ejemplo de uso basico:
+ * <pre>
+ * ValidadorCruce validador = new ValidadorCruce();
+ * 
+ * List&lt;String&gt; columnasA = Arrays.asList("numero_cuenta");
+ * List&lt;String&gt; columnasB = Arrays.asList("numero_cuenta");
+ * 
+ * Map&lt;String, Object&gt; resultado = validador.generarResultadoConModo(
+ *     datosA, columnasA, datosB, columnasB, null, false);
+ * </pre>
+ * 
+ * @author Banco Davivienda
+ * @version 1.0.0
+ */
 public class ValidadorCruce {
     
+    /**
+     * ResultadoCruce - Estructura que contiene los resultados de un cruce simple.
+     * 
+     * Esta clase almacena las estadisticas y detalles del cruce
+     * cuando se usa el metodo cruzarPorColumnas.
+     */
     public static class ResultadoCruce {
+        
+        /** Total de registros procesados del Archivo A */
         public int totalRegistros;
+        
+        /** Numero de registros encontrados en Archivo B */
         public int encontrados;
+        
+        /** Numero de registros NO encontrados en Archivo B */
         public int noEncontrados;
+        
+        /** Lista de detalles por cada registro procesado */
         public List<Map<String, Object>> detalles;
         
+        /**
+         * Constructor que inicializa la lista de detalles.
+         */
         public ResultadoCruce() {
             this.detalles = new ArrayList<>();
         }
         
+        /**
+         * Genera un resumen textual del resultado del cruce.
+         * 
+         * @return String con formato: "Total: X | Encontrados: Y | No encontrados: Z (P%)"
+         */
         public String getResumen() {
             return String.format("Total: %d | Encontrados: %d | No encontrados: %d (%.1f%%)",
                 totalRegistros, encontrados, noEncontrados,
                 totalRegistros > 0 ? (100.0 * encontrados / totalRegistros) : 0);
         }
+        
+        /**
+         * Calcula el porcentaje de registros encontrados.
+         * 
+         * @return Porcentaje como numero decimal (0.0 a 100.0)
+         */
+        public double getPorcentajeEncontrados() {
+            return totalRegistros > 0 ? (100.0 * encontrados / totalRegistros) : 0;
+        }
     }
     
+    /**
+     * Normaliza un valor de texto para comparacion.
+     * 
+     * Reglas de normalizacion:
+     * 1. Elimina espacios al inicio y final
+     * 2. Si es numerico: elimina ceros a la izquierda (ej: "00123" -> "123")
+     * 3. Si es texto: convierte a minusculas
+     * 
+     * @param valor El valor a normalizar (puede ser null)
+     * @return Valor normalizado o cadena vacia si es null/vacio
+     * 
+     * @Ejemplos
+     * normalizarValor("00123")    = "123"
+     * normalizarValor(" ABC ")    = "abc"
+     * normalizarValor(null)       = ""
+     * normalizarValor("123.45")   = "123.45" (decimales no se normalizan)
+     */
     public static String normalizarValor(String valor) {
         if (valor == null) return "";
         String v = valor.trim();
@@ -35,6 +111,12 @@ public class ValidadorCruce {
         return v.toLowerCase();
     }
     
+    /**
+     * Verifica si una cadena representa un numero entero.
+     * 
+     * @param str Cadena a verificar
+     * @return true si es un numero entero valido, false en caso contrario
+     */
     private static boolean esNumerico(String str) {
         if (str == null || str.isEmpty()) return false;
         String s = str.trim();
@@ -51,6 +133,32 @@ public class ValidadorCruce {
         return true;
     }
     
+    /**
+     * Cruza dos conjuntos de datos por columnas clave y retorna resultado detallado.
+     * 
+     * Este metodo compara cada registro del primer conjunto con el segundo,
+     * buscando coincidencias basadas en las columnas especificadas.
+     * 
+     * @param datos1 Lista de registros del Archivo A (cada Map es una fila con {columna -> valor})
+     * @param datos2 Lista de registros del Archivo B para comparar
+     * @param columnasClave Lista de nombres de columnas a usar como clave de cruce
+     * @param columnasValidar Lista de columnas adicionales a validar (opcional, puede ser null)
+     * @return ResultadoCruce con estadisticas y detalles de cada registro
+     * 
+     * @Ejemplo
+     * <pre>
+     * List&lt;Map&lt;String, String&gt;&gt; datosA = lector.leerArchivo("a.xlsx").hojas.get(0).datos;
+     * List&lt;Map&lt;String, String&gt;&gt; datosB = lector.leerArchivo("b.xlsx").hojas.get(0).datos;
+     * 
+     * ValidadorCruce.ResultadoCruce resultado = validador.cruzarPorColumnas(
+     *     datosA, datosB,
+     *     Arrays.asList("numero_cuenta"),
+     *     Arrays.asList("fecha", "monto")
+     * );
+     * 
+     * System.out.println(resultado.getResumen());
+     * </pre>
+     */
     public ResultadoCruce cruzarPorColumnas(
             List<Map<String, String>> datos1,
             List<Map<String, String>> datos2,
@@ -135,6 +243,23 @@ public class ValidadorCruce {
         return resultado;
     }
     
+    /**
+     * Agrega columnas de resultado de cruce a los datos originales.
+     * 
+     * Agrega las siguientes columnas al resultado:
+     * - CRUCE_ESTADO: "ENCONTRADO" o "NO ENCONTRADO"
+     * - CRUCE_CLAVE: Valor de la clave de cruce
+     * - COINCIDENCIAS: Numero de registros coincidentes en B
+     * - CRUCE_VALIDACIONES: Total de validaciones realizadas
+     * - CRUCE_CORRECTOS: Validaciones que coincidieron
+     * - CRUCE_PORCENTAJE: Porcentaje de coincidencias
+     * 
+     * @param datos Lista de registros del Archivo A
+     * @param columnasClave Columnas a usar como clave
+     * @param datosComparar Datos del Archivo B
+     * @param columnasValidar Columnas adicionales a validar (opcional)
+     * @return Lista de registros con columnas de cruce agregadas
+     */
     public List<Map<String, String>> agregarResultadoCruce(
             List<Map<String, String>> datos,
             List<String> columnasClave,
@@ -211,6 +336,18 @@ public class ValidadorCruce {
         return resultado;
     }
     
+    /**
+     * Genera una clave unica a partir de los valores de las columnas especificadas.
+     * 
+     * @param registro Map con los datos del registro
+     * @param columnas Lista de columnas a incluir en la clave
+     * @return Clave formateada como valores separados por "|"
+     * 
+     * @Ejemplo
+     * registro = {nombre="Juan", edad="30"}
+     * columnas = ["nombre", "edad"]
+     * resultado = "Juan|30"
+     */
     private String generarClave(Map<String, String> registro, List<String> columnas) {
         List<String> valores = new ArrayList<>();
         for (String columna : columnas) {
@@ -220,6 +357,13 @@ public class ValidadorCruce {
         return String.join("|", valores);
     }
     
+    /**
+     * Genera una clave normalizada (para comparacion).
+     * 
+     * @param registro Map con los datos del registro
+     * @param columnas Lista de columnas a incluir
+     * @return Clave normalizada (valores en minuscula, numeros sin ceros izquierda)
+     */
     private String generarClaveNormalizada(Map<String, String> registro, List<String> columnas) {
         List<String> valores = new ArrayList<>();
         for (String columna : columnas) {
@@ -229,6 +373,16 @@ public class ValidadorCruce {
         return String.join("|", valores);
     }
     
+    /**
+     * Detecta automaticamente columnas candidatas para ser claves de cruce.
+     * 
+     * Busca columnas cuyo nombre contenga terminos como: cuenta, numero,
+     * identificacion, documento, cedula, nit, referencia, secuencia.
+     * Ademas, la columna debe tener valores en al menos el 50% de los registros.
+     * 
+     * @param datos Lista de registros a analizar
+     * @return Lista de nombres de columnas candidatas
+     */
     public List<String> detectarColumnasClave(List<Map<String, String>> datos) {
         if (datos == null || datos.isEmpty()) return new ArrayList<>();
         
@@ -260,6 +414,17 @@ public class ValidadorCruce {
         return candidatas;
     }
     
+    /**
+     * Agrega resultado de cruce con mapeo de columnas entre archivos.
+     * 
+     * Permite que las columnas clave tengan nombres diferentes en cada archivo.
+     * 
+     * @param datosA Registros del Archivo A
+     * @param columnasClaveA Columnas clave del Archivo A
+     * @param datosB Registros del Archivo B
+     * @param columnasClaveB Columnas clave del Archivo B (pueden tener nombres diferentes)
+     * @return Registros de A con columnas de resultado
+     */
     public List<Map<String, String>> agregarResultadoCruceMapeado(
             List<Map<String, String>> datosA,
             List<String> columnasClaveA,
@@ -301,6 +466,17 @@ public class ValidadorCruce {
         return resultado;
     }
     
+    /**
+     * Version completa del cruce mapeado que incluye datos del archivo B en el resultado.
+     * 
+     * Agrega los datos de la primera coincidencia en B prefixed con "B_".
+     * 
+     * @param datosA Registros del Archivo A
+     * @param columnasClaveA Columnas clave del Archivo A
+     * @param datosB Registros del Archivo B
+     * @param columnasClaveB Columnas clave del Archivo B
+     * @return Registros de A con datos de A y B combinados
+     */
     public List<Map<String, String>> agregarResultadoCruceMapeadoCompleto(
             List<Map<String, String>> datosA,
             List<String> columnasClaveA,
@@ -357,6 +533,22 @@ public class ValidadorCruce {
         return resultado;
     }
     
+    /**
+     * Genera un resultado completo con todos los datos de A y B.
+     * 
+     * Estructura del Map retornado:
+     * - datosA: {encontrados: [], noEncontrados: []}
+     * - datosB: {todos: []}
+     * - resumen: Lista de detalles
+     * - columnasClaveA / columnasClaveB
+     * - estadisticas: {clave -> valor}
+     * 
+     * @param datosA Registros del Archivo A
+     * @param columnasClaveA Columnas clave de A
+     * @param datosB Registros del Archivo B
+     * @param columnasClaveB Columnas clave de B
+     * @return Map con estructura completa de resultados
+     */
     public Map<String, Object> generarResultadoCompleto(
             List<Map<String, String>> datosA,
             List<String> columnasClaveA,
@@ -439,7 +631,8 @@ public class ValidadorCruce {
         estadisticasMap.put("Total registros Archivo B", String.valueOf(totalB));
         estadisticasMap.put("Encontrados", String.valueOf(encontradosFinal));
         estadisticasMap.put("No encontrados", String.valueOf(noHalladosFinal));
-        estadisticasMap.put("Porcentaje encontrado", String.format("%.1f%%", totalA == 0 ? 0 : (100.0 * encontradosFinal / totalA)));
+        estadisticasMap.put("Porcentaje encontrado", String.format("%.1f%%", 
+            totalA == 0 ? 0 : (100.0 * encontradosFinal / totalA)));
         
         resultado.put("datosA", datosA_Map);
         resultado.put("datosB", datosB_Map);
@@ -451,6 +644,18 @@ public class ValidadorCruce {
         return resultado;
     }
     
+    /**
+     * Genera un resultado de cruce simplificado (todas las claves son obligatorias).
+     * 
+     * Este es un atajo para el metodo generarResultadoConModo donde todas
+     * las columnas clave se consideran obligatorias y el modo es AND.
+     * 
+     * @param datosA Registros del Archivo A
+     * @param columnasClaveA Columnas clave de A
+     * @param datosB Registros del Archivo B
+     * @param columnasClaveB Columnas clave de B
+     * @return Map con listas de verificados, no encontrados y estadisticas
+     */
     public Map<String, Object> generarResultadoNuevo(
             List<Map<String, String>> datosA,
             List<String> columnasClaveA,
@@ -465,6 +670,61 @@ public class ValidadorCruce {
         return generarResultadoConModo(datosA, columnasClaveA, datosB, columnasClaveB, todasObligatorias, false);
     }
     
+    /**
+     * Genera resultado de cruce con modo configurable (AND/OR).
+     * 
+     * Este es el metodo principal para realizar cruces de datos.
+     * 
+     * MODOS DE CRUCE:
+     * - matchAny = false (AND/TODAS): Todas las columnas clave deben coincidir
+     * - matchAny = true (OR/CUALQUIERA): Al menos una columna clave debe coincidir
+     * 
+     * ESTRUCTURA DEL RESULTADO:
+     * <pre>
+     * {
+     *     "resultadoA": [...],           // Todos los registros de A con estado
+     *     "verificados": [...],          // Solo registros ENCONTRADOS
+     *     "noEncontrados": [...],        // Solo registros NO ENCONTRADOS
+     *     "estadisticas": {...},         // Map con estadisticas
+     *     "columnasClaveA": [...],       // Columnas usadas de A
+     *     "columnasClaveB": [...]        // Columnas usadas de B
+     * }
+     * </pre>
+     * 
+     * COLUMNAS AGREGADAS A CADA REGISTRO:
+     * - CRUCE_ESTADO: "ENCONTRADO" o "NO ENCONTRADO"
+     * - CRUCE_CLAVE: Valor de la clave de cruce
+     * - COINCIDENCIAS_EN_B: Numero de registros coincidentes
+     * - CRUCE_MODO: "AND" o "OR"
+     * 
+     * @param datosA Lista de registros del Archivo A
+     * @param columnasClaveA Nombres de columnas clave en A
+     * @param datosB Lista de registros del Archivo B
+     * @param columnasClaveB Nombres de columnas clave en B
+     * @param obligatorio Lista de Boolean indicando si cada columna es obligatoria (null = todas obligatorias)
+     * @param matchAny false = modo AND (todas deben coincidir), true = modo OR (al menos una)
+     * @return Map con listas separadas de verificados, no encontrados y estadisticas
+     * 
+     * @Ejemplo AND (TODAS):
+     * <pre>
+     * // Ambos (numero_cuenta Y fecha) deben existir en B
+     * Map&lt;String, Object&gt; resultado = validador.generarResultadoConModo(
+     *     datosA, Arrays.asList("numero_cuenta", "fecha"),
+     *     datosB, Arrays.asList("numero_cuenta", "fecha"),
+     *     null, false
+     * );
+     * </pre>
+     * 
+     * @Ejemplo OR (CUALQUIERA):
+     * <pre>
+     * // Al menos numero_cuenta O fecha debe existir en B
+     * Map&lt;String, Object&gt; resultado = validador.generarResultadoConModo(
+     *     datosA, Arrays.asList("numero_cuenta", "fecha"),
+     *     datosB, Arrays.asList("numero_cuenta", "fecha"),
+     *     null, true
+     * );
+     * </pre>
+     */
     public Map<String, Object> generarResultadoConModo(
             List<Map<String, String>> datosA,
             List<String> columnasClaveA,
