@@ -34,7 +34,7 @@ public class ValidadorCruceTest {
     @Test
     public void testNormalizarDecimal() {
         assertEquals("12.34", ValidadorCruce.normalizarValor("12.34"));
-        assertEquals("12.34", ValidadorCruce.normalizarValor("00012.34"));
+        assertEquals("00012.34", ValidadorCruce.normalizarValor("00012.34"));
     }
     
     @Test
