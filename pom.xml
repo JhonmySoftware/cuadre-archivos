@@ -12,7 +12,7 @@
     
     <name>Cuadre de Archivos</name>
     <description>Aplicacion para validacion y cruce de archivos Excel - Banco Davivienda</description>
-    <url>https://github.com/TU_USUARIO/cuadre-archivos</url>
+    <url>https://github.com/JhonmySoftware/cuadre-archivos</url>
     
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
@@ -159,9 +159,9 @@
     </licenses>
     
     <scm>
-        <url>https://github.com/TU_USUARIO/cuadre-archivos</url>
-        <connection>scm:git:git://github.com/TU_USUARIO/cuadre-archivos.git</connection>
-        <developerConnection>scm:git:git@github.com:TU_USUARIO/cuadre-archivos.git</developerConnection>
+        <url>https://github.com/JhonmySoftware/cuadre-archivos</url>
+        <connection>scm:git:git://github.com/JhonmySoftware/cuadre-archivos.git</connection>
+        <developerConnection>scm:git:git@github.com:JhonmySoftware/cuadre-archivos.git</developerConnection>
     </scm>
     
     <developers>

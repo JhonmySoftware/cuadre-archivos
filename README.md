@@ -36,7 +36,7 @@ Verificar que la informacion contenida en un archivo Excel (Origen) haya sido co
 
 ```bash
 # Clonar el repositorio
-git clone https://github.com/TU_USUARIO/cuadre-archivos.git
+git clone https://github.com/JhonmySoftware/cuadre-archivos.git
 cd cuadre-archivos
 
 # Compilar y empaquetar
