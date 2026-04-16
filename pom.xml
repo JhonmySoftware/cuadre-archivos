@@ -20,8 +20,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>1.8</java.version>
         <poi.version>5.2.5</poi.version>
-        <slf4j.version>2.0.11</slf4j.version>
-        <logback.version>1.4.14</logback.version>
+        <slf4j.version>1.7.36</slf4j.version>
+        <logback.version>1.2.12</logback.version>
         <junit.version>4.13.2</junit.version>
     </properties>
     
